@@ -34,6 +34,13 @@ def driver_card(booking, assignment) -> None:
     ))
 
 
+def review_request(booking, site_url: str) -> None:
+    send('whatsapp', booking.phone, 'review_request', (
+        f'Thank you for travelling with MahakalYatra, {booking.customer_name}! '
+        f'How was your trip? Rate it here: {site_url}/review?ref={booking.ref}'
+    ))
+
+
 def booking_cancelled(booking, refund_amount: int) -> None:
     send('whatsapp', booking.phone, 'booking_cancelled', (
         f'Your booking {booking.ref} has been cancelled. Refund: Rs {refund_amount} '

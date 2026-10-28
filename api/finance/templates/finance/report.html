@@ -1,0 +1,25 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<form method="get" style="margin-bottom:1rem">
+  Trips from <input type="date" name="start" value="{{ s.start|date:'Y-m-d' }}">
+  to <input type="date" name="end" value="{{ s.end|date:'Y-m-d' }}">
+  <button type="submit">Update</button>
+</form>
+<table>
+  <tr><th>Bookings</th><td>{{ s.bookings }}</td></tr>
+  <tr><th>Revenue (tax included)</th><td>Rs {{ s.revenue }}</td></tr>
+  <tr><th>GST portion</th><td>Rs {{ s.tax }}</td></tr>
+  <tr><th>Supplier cost</th><td>Rs {{ s.cost }}</td></tr>
+  <tr><th>Margin before overheads</th><td><b>Rs {{ s.margin }}</b> ({{ s.margin_percent }}%)</td></tr>
+  <tr><th>Refunds</th><td>Rs {{ s.refunds_total }} (pending Rs {{ s.refunds_pending }})</td></tr>
+  <tr><th>Supplier payables outstanding</th><td>Rs {{ s.payables_outstanding }}</td></tr>
+</table>
+<h2 style="margin-top:1.5rem">By package</h2>
+<table>
+  <thead><tr><th>Package</th><th>Bookings</th><th>Revenue</th><th>Margin</th></tr></thead>
+  {% for p in s.by_package %}
+  <tr><td>{{ p.package_name }}</td><td>{{ p.bookings }}</td><td>Rs {{ p.revenue }}</td><td>Rs {{ p.margin }}</td></tr>
+  {% empty %}<tr><td colspan="4">No bookings in this range.</td></tr>{% endfor %}
+</table>
+<p style="margin-top:1rem;color:#666">Margin is before advertising, salaries, gateway fees and overheads. Confirm GST treatment with your CA.</p>
+{% endblock %}

@@ -17,16 +17,24 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
+# Configuration comes from environment variables (see api/.env.example).
+# Defaults suit local development; production must set DJANGO_DEBUG=0 and a real secret key.
+from django.core.exceptions import ImproperlyConfigured
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-k1fwza&&1f(rt5f%(8k_4l_r%+4!f+ie$gq3_%eqay_i)7##a%'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+def env_list(name: str, default: str = '') -> list[str]:
+    return [v.strip() for v in os.environ.get(name, default).split(',') if v.strip()]
 
-ALLOWED_HOSTS = []
+
+DEBUG = os.environ.get('DJANGO_DEBUG', '1') == '1'
+
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '')
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured('Set DJANGO_SECRET_KEY when DJANGO_DEBUG=0.')
+    SECRET_KEY = 'dev-only-insecure-key'
+
+ALLOWED_HOSTS = env_list('DJANGO_ALLOWED_HOSTS')
 
 
 # Application definition
@@ -46,10 +54,14 @@ INSTALLED_APPS = [
     'bookings',
     'operations',
     'notifications',
+    'reviews',
+    'finance',
+    'driver',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -88,6 +100,9 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+if os.environ.get('DATABASE_URL'):  # PostgreSQL in production
+    import dj_database_url
+    DATABASES['default'] = dj_database_url.parse(os.environ['DATABASE_URL'], conn_max_age=600)
 
 
 # Password validation
@@ -125,19 +140,32 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage'},
+}
 
 
 # API
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-]
+CORS_ALLOWED_ORIGINS = env_list('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000')
+CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS')
+
+if not DEBUG:  # HTTPS hardening behind the platform's proxy
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = os.environ.get('DJANGO_SSL_REDIRECT', '1') == '1'
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 60 * 60 * 24 * 30
 
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': ['rest_framework.renderers.JSONRenderer'],
     'DEFAULT_AUTHENTICATION_CLASSES': [],
     'DEFAULT_THROTTLE_RATES': {'enquiry': '10/hour', 'booking': '20/hour', 'lookup': '60/hour'},
 }
+
+GOOGLE_REVIEW_URL = os.environ.get('GOOGLE_REVIEW_URL', '')
+SITE_URL = os.environ.get('SITE_URL', 'http://localhost:3000')
 
 # Business rules (confirm tax treatment with a CA before launch)
 GST_PERCENT = 5

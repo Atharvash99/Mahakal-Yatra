@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import EnquiryForm from "@/components/EnquiryForm";
+import { getPackages } from "@/lib/catalog";
 import { Icon, Mandala } from "@/components/Art";
 
 export const metadata: Metadata = {
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
 async function FormWithPackage({ searchParams }: { searchParams: PageProps<"/enquiry">["searchParams"] }) {
   const sp = await searchParams;
   const pkg = typeof sp.package === "string" ? sp.package : "";
-  return <EnquiryForm defaultPackage={pkg} />;
+  return <EnquiryForm packages={await getPackages()} defaultPackage={pkg} />;
 }
 
 export default function EnquiryPage(props: PageProps<"/enquiry">) {

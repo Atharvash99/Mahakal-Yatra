@@ -1,0 +1,36 @@
+# Render blueprint for the API and its PostgreSQL database.
+# The website (web/) deploys to Vercel; set NEXT_PUBLIC_API_URL there to this API's URL.
+services:
+  - type: web
+    name: mahakalyatra-api
+    runtime: python
+    rootDir: api
+    buildCommand: ./build.sh
+    startCommand: gunicorn config.wsgi --bind 0.0.0.0:$PORT
+    healthCheckPath: /api/packages/
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
+      - key: DJANGO_DEBUG
+        value: "0"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_ALLOWED_HOSTS
+        value: mahakalyatra-api.onrender.com
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://mahakalyatra-api.onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: SITE_URL
+        sync: false
+      - key: PAYMENT_GATEWAY
+        value: mock
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mahakalyatra-db
+          property: connectionString
+
+databases:
+  - name: mahakalyatra-db
+    databaseName: mahakalyatra
+    plan: basic-256mb

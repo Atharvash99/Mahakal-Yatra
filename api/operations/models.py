@@ -7,6 +7,7 @@ class Driver(models.Model):
     photo_url = models.URLField(blank=True)
     rating = models.DecimalField(max_digits=2, decimal_places=1, default=4.5)
     years_experience = models.PositiveSmallIntegerField(default=1)
+    pin_hash = models.CharField(max_length=128, blank=True, editable=False)
     active = models.BooleanField(default=True)
 
     def __str__(self):
@@ -32,6 +33,9 @@ class Assignment(models.Model):
     pickup_time = models.TimeField(null=True, blank=True)
     notes = models.TextField(blank=True)
     driver_card_sent_at = models.DateTimeField(null=True, blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    cash_collected = models.PositiveIntegerField(default=0, help_text='Balance the driver collected on the trip (INR)')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

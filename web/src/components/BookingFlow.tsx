@@ -8,6 +8,7 @@ import {
   getJson, inr, niceDate, openRazorpay, post, rememberBooking,
   type ApiResult, type Booking, type PaymentOrder, type Quote,
 } from "@/lib/api";
+import type { Addon } from "@/lib/catalog";
 
 type Departure = { date: string; label: string; seats_left: number; price: number };
 type Created = { booking: Booking; payment: PaymentOrder };
@@ -16,13 +17,18 @@ const field =
   "mt-1 w-full rounded-xl border border-gold/50 bg-cream/60 px-3 py-2.5 text-sm outline-none transition focus:border-saffron focus:ring-2 focus:ring-saffron/30";
 const today = () => new Date().toISOString().slice(0, 10);
 
-export default function BookingFlow({ pkg, initialDate, initialTravellers }: {
+export default function BookingFlow({ pkg, addons, initialDate, initialTravellers }: {
   pkg: TravelPackage;
+  addons: Addon[];
   initialDate?: string;
   initialTravellers?: number;
 }) {
   const [date, setDate] = useState(initialDate ?? "");
   const [travellers, setTravellers] = useState(initialTravellers ?? 2);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [couponInput, setCouponInput] = useState("");
+  const [coupon, setCoupon] = useState("");
+  const [couponError, setCouponError] = useState("");
   const [fetchedQuote, setQuote] = useState<Quote | null>(null);
   const [fetchedError, setQuoteError] = useState("");
   const [departures, setDepartures] = useState<Departure[]>([]);
@@ -45,12 +51,17 @@ export default function BookingFlow({ pkg, initialDate, initialTravellers }: {
     if (!date) return;
     let live = true;
     const t = setTimeout(async () => {
-      const r = await post<Quote>("/quotes/", { package: pkg.slug, travel_date: date, travellers });
+      const ask = (c: string) => post<Quote>("/quotes/", { package: pkg.slug, travel_date: date, travellers, addons: picked, coupon: c });
+      let r = await ask(coupon);
+      let bad = "";
+      // a bad coupon must not hide the price: show the price without it and flag the coupon
+      if (!r.ok && coupon) { bad = r.error; r = await ask(""); }
       if (!live) return;
+      setCouponError(bad);
       if (r.ok) { setQuote(r.data); setQuoteError(""); } else { setQuote(null); setQuoteError(r.error); }
     }, 250);
     return () => { live = false; clearTimeout(t); };
-  }, [date, travellers, pkg.slug]);
+  }, [date, travellers, pkg.slug, picked, coupon]);
 
   // with no date picked, ignore whatever was fetched earlier
   const quote = date ? fetchedQuote : null;
@@ -67,7 +78,8 @@ export default function BookingFlow({ pkg, initialDate, initialTravellers }: {
     if (!quote) { setFormError("Pick a valid travel date first."); return; }
     setBusy(true); setFormError(""); setFieldErrors({});
     const r: ApiResult<Created> = await post<Created>("/bookings/", {
-      package: pkg.slug, travel_date: date, travellers, ...contact,
+      package: pkg.slug, travel_date: date, travellers, addons: picked,
+      coupon: quote.coupon_code, ...contact,
     });
     setBusy(false);
     if (!r.ok) { setFormError(r.error); setFieldErrors(r.fields ?? {}); return; }
@@ -185,6 +197,28 @@ export default function BookingFlow({ pkg, initialDate, initialTravellers }: {
           {quoteError && <p className="mt-3 text-sm text-rose-600">{quoteError}</p>}
         </section>
 
+        {addons.length > 0 && (
+          <section className="rounded-3xl border border-gold/40 bg-white p-6 shadow-sm">
+            <h2 className="font-display text-2xl font-bold text-maroon">Make it special <span className="text-sm font-normal text-neutral-500">(optional)</span></h2>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {addons.map((a) => {
+                const on = picked.includes(a.slug);
+                return (
+                  <label key={a.slug} className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition ${on ? "border-saffron bg-gold-soft/50" : "border-gold/40 hover:bg-cream"}`}>
+                    <input type="checkbox" checked={on} className="mt-1 accent-[#e3730a]"
+                      onChange={() => setPicked(on ? picked.filter((s) => s !== a.slug) : [...picked, a.slug])} />
+                    <span>
+                      <span className="block font-medium text-maroon">{a.name}</span>
+                      <span className="block text-xs text-neutral-600">{a.description}</span>
+                      <span className="mt-1 block text-sm font-semibold">{inr(a.price)}{a.perPerson ? " / person" : ""}</span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         <section className="rounded-3xl border border-gold/40 bg-white p-6 shadow-sm">
           <p className="text-sm font-semibold uppercase tracking-widest text-saffron-2">Step 2 of 3</p>
           <h2 className="font-display text-2xl font-bold text-maroon">Your details</h2>
@@ -220,7 +254,9 @@ export default function BookingFlow({ pkg, initialDate, initialTravellers }: {
           <p className="text-xs text-neutral-500">{pkg.duration}</p>
           {quote ? (
             <dl className="mt-4 space-y-2 text-sm">
-              <Row k={`${inr(quote.unit_price)} × ${quote.travellers}`} v={inr(quote.total)} />
+              <Row k={`${inr(quote.unit_price)} × ${quote.travellers}`} v={inr(quote.base)} />
+              {quote.addons.map((a) => <Row key={a.slug} k={a.name} v={inr(a.amount)} />)}
+              {quote.discount > 0 && <Row k={`Coupon ${quote.coupon_code}`} v={`− ${inr(quote.discount)}`} muted />}
               <Row k="GST (included)" v={inr(quote.tax)} muted />
               <div className="my-2 border-t border-gold/40" />
               <Row k="Total" v={inr(quote.total)} strong />
@@ -231,6 +267,17 @@ export default function BookingFlow({ pkg, initialDate, initialTravellers }: {
           ) : (
             <p className="mt-4 text-sm text-neutral-500">Select a date to see your price.</p>
           )}
+          <div className="mt-4">
+            <div className="flex gap-2">
+              <input value={couponInput} onChange={(e) => setCouponInput(e.target.value.toUpperCase())} placeholder="Coupon code"
+                className="min-w-0 flex-1 rounded-xl border border-gold/50 bg-cream/60 px-3 py-2 text-sm outline-none focus:border-saffron" />
+              <button type="button" onClick={() => setCoupon(couponInput.trim())} className="rounded-xl border border-maroon px-3 py-2 text-sm font-semibold text-maroon hover:bg-maroon hover:text-gold-soft">
+                Apply
+              </button>
+            </div>
+            {coupon && quote?.coupon_code && <p className="mt-1 text-xs text-emerald-700">Coupon applied ✓</p>}
+            {coupon && couponError && <p className="mt-1 text-xs text-rose-600">{couponError}</p>}
+          </div>
           {formError && <p className="mt-3 text-sm text-rose-600">{formError}</p>}
           <button disabled={busy || !quote} className="mt-5 w-full rounded-full bg-saffron px-6 py-3.5 font-semibold text-night hover:bg-gold disabled:opacity-50">
             {busy ? "Reserving…" : "Continue to payment"}

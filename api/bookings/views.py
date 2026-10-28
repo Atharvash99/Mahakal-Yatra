@@ -40,6 +40,8 @@ class CreateBooking(serializers.Serializer):
     email = serializers.EmailField(required=False, allow_blank=True)
     pickup_point = serializers.CharField(max_length=200, required=False, allow_blank=True)
     special_requests = serializers.CharField(max_length=1000, required=False, allow_blank=True)
+    addons = serializers.ListField(child=serializers.SlugField(), required=False, default=list)
+    coupon = serializers.CharField(required=False, allow_blank=True, default='')
     website = serializers.CharField(required=False, allow_blank=True)  # honeypot
 
     def validate_phone(self, v):
@@ -61,6 +63,8 @@ def booking_json(b: Booking) -> dict:
         'festival_label': b.festival_label,
         'price': {
             'unit': b.unit_price, 'total': b.total_amount, 'tax': b.tax_amount,
+            'addons': b.addons, 'addons_total': b.addons_amount,
+            'discount': b.discount_amount, 'coupon': b.coupon_code,
             'advance': b.advance_amount, 'paid': b.paid_amount, 'balance_due': b.balance_due,
         },
         'cancellation_policy': b.cancellation_policy,

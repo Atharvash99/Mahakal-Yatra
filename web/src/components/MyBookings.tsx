@@ -163,6 +163,12 @@ export default function MyBookings() {
             )}
 
             <dl className="mt-6 space-y-2 text-sm">
+              {booking.price.addons.map((a) => (
+                <div key={a.slug} className="flex justify-between text-neutral-600"><dt>{a.name}</dt><dd>{inr(a.amount)}</dd></div>
+              ))}
+              {booking.price.discount > 0 && (
+                <div className="flex justify-between text-neutral-600"><dt>Coupon {booking.price.coupon}</dt><dd>− {inr(booking.price.discount)}</dd></div>
+              )}
               <div className="flex justify-between"><dt>Total</dt><dd className="font-semibold">{inr(booking.price.total)}</dd></div>
               <div className="flex justify-between"><dt>Paid</dt><dd>{inr(booking.price.paid)}</dd></div>
               {!cancelled && <div className="flex justify-between font-semibold text-maroon"><dt>Balance due on trip</dt><dd>{inr(booking.price.balance_due)}</dd></div>}
@@ -174,6 +180,11 @@ export default function MyBookings() {
                 <button onClick={payBalance} disabled={busy} className="rounded-full bg-saffron px-6 py-2.5 text-sm font-semibold text-night hover:bg-gold disabled:opacity-60">
                   Pay balance {inr(booking.price.balance_due)}
                 </button>
+              )}
+              {booking.status === "completed" && (
+                <Link href={`/review?ref=${booking.ref}`} className="rounded-full bg-saffron px-6 py-2.5 text-sm font-semibold text-night hover:bg-gold">
+                  Rate your trip
+                </Link>
               )}
               <a href={whatsappLink(`Hi MahakalYatra, booking ${booking.ref}: I need help.`)} target="_blank" rel="noreferrer"
                 className="rounded-full border border-maroon px-6 py-2.5 text-sm font-semibold text-maroon hover:bg-maroon hover:text-gold-soft">

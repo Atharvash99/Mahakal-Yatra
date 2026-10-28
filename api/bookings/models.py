@@ -49,6 +49,10 @@ class Booking(models.Model):
     cost_amount = models.PositiveIntegerField()
     margin_amount = models.IntegerField()
     advance_amount = models.PositiveIntegerField()
+    addons = models.JSONField(default=list)
+    addons_amount = models.PositiveIntegerField(default=0)
+    discount_amount = models.PositiveIntegerField(default=0)
+    coupon_code = models.CharField(max_length=30, blank=True)
     festival_label = models.CharField(max_length=100, blank=True)
     cancellation_policy = models.JSONField(default=list)
 

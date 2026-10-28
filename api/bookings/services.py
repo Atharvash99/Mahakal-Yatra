@@ -34,10 +34,13 @@ def _new_payment(booking: Booking, kind: str, amount: int) -> Payment:
 
 @transaction.atomic
 def create_booking(*, package, travel_date, travellers, customer_name, phone, email='',
-                   pickup_point='', special_requests='', traveller_names=()) -> tuple[Booking, Payment]:
+                   pickup_point='', special_requests='', traveller_names=(),
+                   addons=(), coupon='') -> tuple[Booking, Payment]:
     try:
-        q = catalog.quote(package, travel_date, travellers)
+        q = catalog.quote(package, travel_date, travellers, addons=addons, coupon=coupon)
         catalog.reserve_seats(package, travel_date, travellers)
+        if q.coupon_code:
+            catalog.redeem_coupon(q.coupon_code)
     except catalog.QuoteError as e:
         raise BookingError(str(e))
     pkg = catalog.get_package(package)
@@ -47,6 +50,7 @@ def create_booking(*, package, travel_date, travellers, customer_name, phone, em
         special_requests=special_requests, unit_price=q.unit_price, total_amount=q.total,
         tax_amount=q.tax, cost_amount=q.cost, margin_amount=q.margin, advance_amount=q.advance,
         festival_label=q.festival_label, cancellation_policy=pkg.cancellation_policy,
+        addons=q.addons, addons_amount=q.addons_total, discount_amount=q.discount, coupon_code=q.coupon_code,
     )
     for t in traveller_names:
         Traveller.objects.create(booking=booking, name=t)
@@ -93,6 +97,16 @@ def start_balance_payment(booking: Booking) -> Payment:
     return _new_payment(booking, Payment.Kind.BALANCE, booking.balance_due)
 
 
+def record_cash_payment(booking: Booking, amount: int) -> Payment | None:
+    """Balance collected in cash by the driver, so the booking shows what was actually paid."""
+    if amount <= 0:
+        return None
+    return Payment.objects.create(
+        booking=booking, kind=Payment.Kind.BALANCE, amount=amount, provider='cash',
+        provider_order_id=f'cash_{booking.ref}_{secrets.token_hex(4)}',
+        status=Payment.Status.PAID, paid_at=timezone.now())
+
+
 def refund_percent_for(booking: Booking, now=None) -> int:
     now = now or timezone.now()
     trip_start = timezone.make_aware(datetime.combine(booking.travel_date, time(6, 0)))
@@ -125,6 +139,15 @@ def mark_refund_processed(refund: Refund) -> None:
         booking = refund.booking
         if booking.status == Booking.Status.CANCELLED:
             _set_status(booking, Booking.Status.REFUNDED)
+
+
+def bookings_by_ref(refs) -> dict:
+    return {b.ref: b for b in Booking.objects.filter(ref__in=list(refs))}
+
+
+def find_for_customer(ref: str, phone: str) -> Booking | None:
+    """The booking a customer may see: reference and phone must both match."""
+    return Booking.objects.filter(ref=(ref or '').upper().strip(), phone=phone).first()
 
 
 def mark_assigned(booking: Booking) -> None:

@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useState } from "react";
-import { packages } from "@/data/packages";
+import type { TravelPackage } from "@/data/packages";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -10,7 +10,7 @@ type Errors = Record<string, string[]>;
 const field =
   "mt-1 w-full rounded-xl border border-gold/50 bg-cream/60 px-3 py-2.5 text-sm outline-none transition focus:border-saffron focus:ring-2 focus:ring-saffron/30";
 
-export default function EnquiryForm({ defaultPackage = "" }: { defaultPackage?: string }) {
+export default function EnquiryForm({ packages, defaultPackage = "" }: { packages: TravelPackage[]; defaultPackage?: string }) {
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [errors, setErrors] = useState<Errors>({});
 

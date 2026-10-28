@@ -1,4 +1,4 @@
-import { inr, packages, type Item, type TravelPackage } from "@/data/packages";
+import { inr, type Item, type TravelPackage } from "@/data/packages";
 
 // Rule-based answers generated only from package data, so the bot can never
 // invent an inclusion or promise temple access. Anything it cannot answer is
@@ -25,21 +25,22 @@ function matchItem(q: string, items: Item[]) {
   return items.find((i) => i.keywords.some((k) => hasWord(q, k)));
 }
 
-export function detectPackage(q: string): TravelPackage | undefined {
+export function detectPackage(q: string, packages: TravelPackage[]): TravelPackage | undefined {
   const n = norm(q);
+  const by = (slug: string) => packages.find((p) => p.slug === slug);
   if (has(n, ["omkareshwar", "omkar"]) && has(n, ["ujjain", "2 day", "two day", "flagship"]))
-    return packages[2];
-  if (has(n, ["flagship", "2 day", "two day", "2 days"])) return packages[2];
-  if (has(n, ["omkareshwar", "omkar"])) return packages[1];
-  if (has(n, ["ujjain", "circuit"])) return packages[0];
+    return by("ujjain-omkareshwar-2-days");
+  if (has(n, ["flagship", "2 day", "two day", "2 days"])) return by("ujjain-omkareshwar-2-days");
+  if (has(n, ["omkareshwar", "omkar"])) return by("omkareshwar-day-trip");
+  if (has(n, ["ujjain", "circuit"])) return by("ujjain-temple-circuit");
   return undefined;
 }
 
 const list = (items: Item[]) => items.map((i) => `• ${i.label}`).join("\n");
 
-export function answer(question: string, pkg?: TravelPackage): BotReply {
+export function answer(question: string, packages: TravelPackage[], pkg?: TravelPackage): BotReply {
   const q = norm(question);
-  const target = pkg ?? detectPackage(q);
+  const target = pkg ?? detectPackage(q, packages);
 
   if (has(q, ["bhasma", "bhasm", "vip", "guaranteed", "special darshan"])) {
     return {

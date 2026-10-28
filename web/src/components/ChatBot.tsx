@@ -2,13 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { answer, detectPackage } from "@/lib/bot";
-import { getPackage, packages, type TravelPackage } from "@/data/packages";
+import type { TravelPackage } from "@/data/packages";
 import { whatsappLink } from "@/lib/whatsapp";
 
 type Msg = { from: "bot" | "user"; text: string; handoff?: boolean };
 
-export default function ChatBot({ packageSlug }: { packageSlug?: string }) {
-  const fixed = packageSlug ? getPackage(packageSlug) : undefined;
+export default function ChatBot({ packages, packageSlug }: { packages: TravelPackage[]; packageSlug?: string }) {
+  const fixed = packageSlug ? packages.find((p) => p.slug === packageSlug) : undefined;
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<TravelPackage | undefined>(fixed);
   const [input, setInput] = useState("");
@@ -34,10 +34,10 @@ export default function ChatBot({ packageSlug }: { packageSlug?: string }) {
   function send(text: string) {
     const t = text.trim();
     if (!t) return;
-    const mentioned = detectPackage(t);
+    const mentioned = detectPackage(t, packages);
     const pkg = mentioned ?? active;
     if (mentioned) setActive(mentioned);
-    const reply = answer(t, pkg);
+    const reply = answer(t, packages, pkg);
     setMsgs((m) => [
       ...m,
       { from: "user", text: t },

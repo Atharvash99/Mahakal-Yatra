@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Playfair_Display, Tiro_Devanagari_Hindi } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
+import { SITE_URL } from "@/lib/site";
 import { whatsappLink } from "@/lib/whatsapp";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -9,6 +10,7 @@ const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["lati
 const deva = Tiro_Devanagari_Hindi({ variable: "--font-deva", subsets: ["devanagari", "latin"], weight: "400" });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "MahakalYatra | Ujjain & Omkareshwar Tours",
   description:
     "Fixed-price Ujjain and Omkareshwar yatra packages with a named driver and vehicle shared before the trip.",
@@ -55,6 +57,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 <li><Link href="/#packages" className="hover:text-white">Packages</Link></li>
                 <li><Link href="/enquiry" className="hover:text-white">Send an enquiry</Link></li>
                 <li><Link href="/#faq" className="hover:text-white">FAQ</Link></li>
+                <li><Link href="/guides/bhasma-aarti-booking-guide" className="hover:text-white">Bhasma Aarti guide</Link></li>
+                <li><Link href="/guides/indore-to-ujjain-taxi" className="hover:text-white">Indore to Ujjain taxi</Link></li>
+                <li><Link href="/guides/ujjain-omkareshwar-one-day-trip" className="hover:text-white">Ujjain + Omkareshwar in a day</Link></li>
               </ul>
             </div>
             <div className="text-sm">

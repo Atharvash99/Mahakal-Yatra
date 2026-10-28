@@ -2,14 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { packages } from "@/data/packages";
+import type { TravelPackage } from "@/data/packages";
 
 const box =
   "mt-1 w-full rounded-xl border border-gold/40 bg-white/95 px-3 py-2.5 text-sm text-neutral-900 outline-none focus:ring-2 focus:ring-saffron/50";
 
-export default function QuickPlan() {
+export default function QuickPlan({ packages }: { packages: TravelPackage[] }) {
   const router = useRouter();
-  const [pkg, setPkg] = useState(packages[2].slug);
+  const [pkg, setPkg] = useState((packages.find((p) => p.slug === "ujjain-omkareshwar-2-days") ?? packages[0]).slug);
   const [date, setDate] = useState("");
   const [n, setN] = useState(2);
 

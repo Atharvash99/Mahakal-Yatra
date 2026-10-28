@@ -16,10 +16,48 @@ class Package(models.Model):
     # cancellation policy as data so refunds can be computed:
     # [{"hours_before": 72, "refund_percent": 90}, ..., {"hours_before": 0, "refund_percent": 0}]
     cancellation_policy = models.JSONField(default=list)
+    # page content: edited in the admin, served to the website
+    highlights = models.JSONField(default=list, help_text='["Mahakaleshwar", ...]')
+    itinerary = models.JSONField(default=list, help_text='[{"title": "Day 1", "detail": "..."}]')
+    inclusions = models.JSONField(default=list, help_text='[{"label": "...", "keywords": ["cab"]}]')
+    exclusions = models.JSONField(default=list, help_text='[{"label": "...", "keywords": ["lunch"]}]')
     active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
+
+
+class Addon(models.Model):
+    """Optional extras sold with any package: hotel, puja, guide, photo and video."""
+
+    slug = models.SlugField(unique=True)
+    name = models.CharField(max_length=100)
+    description = models.CharField(max_length=200, blank=True)
+    price = models.PositiveIntegerField(help_text='INR, tax included')
+    cost = models.PositiveIntegerField(default=0, help_text='Our cost, for margin reports')
+    per_person = models.BooleanField(default=False)
+    active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Coupon(models.Model):
+    code = models.CharField(max_length=30, unique=True)
+    percent_off = models.PositiveSmallIntegerField(null=True, blank=True)
+    flat_off = models.PositiveIntegerField(null=True, blank=True)
+    min_total = models.PositiveIntegerField(default=0)
+    max_uses = models.PositiveIntegerField(null=True, blank=True)
+    used_count = models.PositiveIntegerField(default=0, editable=False)
+    valid_until = models.DateField(null=True, blank=True)
+    active = models.BooleanField(default=True)
+
+    def save(self, *args, **kwargs):
+        self.code = self.code.upper().strip()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.code
 
 
 class PackageDeparture(models.Model):

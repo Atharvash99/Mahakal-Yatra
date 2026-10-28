@@ -16,11 +16,13 @@ ROLES = {
         'bookings.booking': ['view', 'change'],
         'customers.enquiry': ['view', 'change'],
         'catalog.package': ['view'],
+        'reviews.review': ['view', 'change'],
     },
     'Accountant': {
         'bookings.booking': ['view'],
         'bookings.payment': ['view', 'change'],
         'bookings.refund': ['view', 'change'],
+        'finance.payable': ['add', 'view', 'change'],
     },
 }
 

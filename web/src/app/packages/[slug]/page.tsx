@@ -3,26 +3,40 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ChatBot from "@/components/ChatBot";
 import { Icon, Mandala, Skyline } from "@/components/Art";
-import { getPackage, inr, packages } from "@/data/packages";
+import { inr } from "@/data/packages";
+import { getPackage, getPackages, getReviews } from "@/lib/catalog";
+import { SITE_URL } from "@/lib/site";
+import JsonLd from "@/components/JsonLd";
 import { whatsappLink } from "@/lib/whatsapp";
 
-export function generateStaticParams() {
-  return packages.map((p) => ({ slug: p.slug }));
+export async function generateStaticParams() {
+  return (await getPackages()).map((p) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata(props: PageProps<"/packages/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
-  const p = getPackage(slug);
+  const p = await getPackage(slug);
   return p ? { title: `${p.name} | MahakalYatra`, description: p.tagline } : {};
 }
 
 export default async function PackagePage(props: PageProps<"/packages/[slug]">) {
   const { slug } = await props.params;
-  const p = getPackage(slug);
+  const [p, all, reviews] = await Promise.all([getPackage(slug), getPackages(), getReviews(slug)]);
   if (!p) notFound();
 
   return (
     <>
+      <JsonLd data={{
+        "@context": "https://schema.org",
+        "@type": "TouristTrip",
+        name: p.name,
+        description: p.tagline,
+        touristType: "Pilgrims",
+        itinerary: p.itinerary.map((s) => ({ "@type": "TouristAttraction", name: s.title, description: s.detail })),
+        offers: { "@type": "Offer", price: p.price, priceCurrency: "INR", availability: "https://schema.org/InStock", url: `${SITE_URL}/packages/${p.slug}` },
+        provider: { "@type": "TravelAgency", name: "MahakalYatra", url: SITE_URL },
+        ...(reviews.count > 0 && reviews.average ? { aggregateRating: { "@type": "AggregateRating", ratingValue: reviews.average, reviewCount: reviews.count } } : {}),
+      }} />
       <section className="relative overflow-hidden bg-gradient-to-b from-night via-maroon to-maroon-2 text-white">
         <Mandala className="pointer-events-none absolute -right-24 top-1/2 h-[30rem] w-[30rem] -translate-y-1/2 text-gold/20 animate-spin-slow" />
         <div className="relative mx-auto max-w-6xl px-4 pb-28 pt-12 sm:pt-16">
@@ -89,6 +103,23 @@ export default async function PackagePage(props: PageProps<"/packages/[slug]">) 
             </section>
           </div>
 
+          {reviews.count > 0 && (
+            <section className="mt-12">
+              <h2 className="font-display text-2xl font-semibold text-maroon">
+                Traveller reviews <span className="text-base font-normal text-neutral-500">{reviews.average} ★ · {reviews.count}</span>
+              </h2>
+              <div className="mt-4 space-y-3">
+                {reviews.reviews.slice(0, 3).map((r) => (
+                  <figure key={r.name + r.date} className="rounded-2xl bg-white p-4 shadow-sm">
+                    <p className="text-sm text-saffron">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</p>
+                    <blockquote className="mt-1 text-sm text-neutral-700">{r.comment || "A smooth, well-organised yatra."}</blockquote>
+                    <figcaption className="mt-2 text-xs font-semibold text-maroon">{r.name}</figcaption>
+                  </figure>
+                ))}
+              </div>
+            </section>
+          )}
+
           <h2 className="mt-12 font-display text-2xl font-semibold text-maroon">Cancellation policy</h2>
           <ul className="mt-4 divide-y divide-gold/30 overflow-hidden rounded-2xl border border-gold/40 bg-white text-sm">
             {p.cancellation.map((r) => (
@@ -135,7 +166,7 @@ export default async function PackagePage(props: PageProps<"/packages/[slug]">) 
           </div>
         </aside>
       </div>
-      <ChatBot packageSlug={p.slug} />
+      <ChatBot packages={all} packageSlug={p.slug} />
     </>
   );
 }

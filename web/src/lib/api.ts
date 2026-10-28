@@ -5,6 +5,11 @@ export type Quote = {
   travel_date: string;
   travellers: number;
   unit_price: number;
+  base: number;
+  addons: { slug: string; name: string; amount: number }[];
+  addons_total: number;
+  coupon_code: string;
+  discount: number;
   total: number;
   tax: number;
   advance: number;
@@ -35,7 +40,10 @@ export type Booking = {
   customer_name: string;
   pickup_point: string;
   festival_label: string;
-  price: { unit: number; total: number; tax: number; advance: number; paid: number; balance_due: number };
+  price: {
+    unit: number; total: number; tax: number; advance: number; paid: number; balance_due: number;
+    addons: { slug: string; name: string; amount: number }[]; addons_total: number; discount: number; coupon: string;
+  };
   cancellation_policy: { hours_before: number; refund_percent: number }[];
   refunds: { amount: number; percent: number; status: string }[];
   driver_card: DriverCard | null;

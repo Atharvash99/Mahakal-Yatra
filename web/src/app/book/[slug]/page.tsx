@@ -3,30 +3,30 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import BookingFlow from "@/components/BookingFlow";
 import { Mandala } from "@/components/Art";
-import { getPackage, packages } from "@/data/packages";
+import { getAddons, getPackage, getPackages } from "@/lib/catalog";
 
-export function generateStaticParams() {
-  return packages.map((p) => ({ slug: p.slug }));
+export async function generateStaticParams() {
+  return (await getPackages()).map((p) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata(props: PageProps<"/book/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
-  const p = getPackage(slug);
+  const p = await getPackage(slug);
   return { title: p ? `Book ${p.name} | MahakalYatra` : "Book | MahakalYatra" };
 }
 
 async function Flow({ slug, searchParams }: { slug: string; searchParams: PageProps<"/book/[slug]">["searchParams"] }) {
-  const p = getPackage(slug);
+  const [p, addons] = await Promise.all([getPackage(slug), getAddons()]);
   if (!p) notFound();
   const sp = await searchParams;
   const date = typeof sp.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : undefined;
   const n = typeof sp.n === "string" ? Math.min(12, Math.max(1, parseInt(sp.n, 10) || 2)) : undefined;
-  return <BookingFlow pkg={p} initialDate={date} initialTravellers={n} />;
+  return <BookingFlow pkg={p} addons={addons} initialDate={date} initialTravellers={n} />;
 }
 
 export default async function BookPage(props: PageProps<"/book/[slug]">) {
   const { slug } = await props.params;
-  const p = getPackage(slug);
+  const p = await getPackage(slug);
   if (!p) notFound();
   return (
     <>

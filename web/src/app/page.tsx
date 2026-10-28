@@ -2,7 +2,8 @@ import Link from "next/link";
 import ChatBot from "@/components/ChatBot";
 import QuickPlan from "@/components/QuickPlan";
 import { Icon, Mandala, Skyline } from "@/components/Art";
-import { inr, packages } from "@/data/packages";
+import { inr } from "@/data/packages";
+import { getPackages, getReviews } from "@/lib/catalog";
 import { whatsappLink } from "@/lib/whatsapp";
 
 const features = [
@@ -55,7 +56,8 @@ const gradients = [
   "from-night via-maroon to-gold",
 ];
 
-export default function Home() {
+export default async function Home() {
+  const [packages, reviews] = await Promise.all([getPackages(), getReviews()]);
   return (
     <>
       {/* HERO */}
@@ -91,7 +93,7 @@ export default function Home() {
               View packages
             </Link>
           </div>
-          <QuickPlan />
+          <QuickPlan packages={packages} />
           <div className="animate-fade-up delay-3 mx-auto mt-10 grid max-w-2xl grid-cols-3 gap-4 text-center">
             {[
               ["2", "Jyotirlingas"],
@@ -291,6 +293,28 @@ export default function Home() {
         </div>
       </section>
 
+      {/* REVIEWS: only real, approved reviews are ever shown */}
+      {reviews.count > 0 && (
+        <section id="reviews" className="mx-auto max-w-6xl px-4 pt-20">
+          <div className="text-center">
+            <p className="text-sm font-semibold uppercase tracking-widest text-saffron-2">Traveller reviews</p>
+            <h2 className="mt-2 font-display text-3xl font-bold text-maroon sm:text-4xl">
+              {reviews.average} <span className="text-saffron">★</span>
+              <span className="ml-2 text-lg font-normal text-neutral-500">from {reviews.count} trips</span>
+            </h2>
+          </div>
+          <div className="mt-10 grid gap-5 md:grid-cols-3">
+            {reviews.reviews.slice(0, 3).map((r) => (
+              <figure key={r.name + r.date} className="rounded-2xl border border-gold/30 bg-white p-6 shadow-sm">
+                <p className="text-saffron" aria-label={`${r.rating} out of 5`}>{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</p>
+                <blockquote className="mt-3 text-sm text-neutral-700">{r.comment || "A smooth, well-organised yatra."}</blockquote>
+                <figcaption className="mt-4 text-xs font-semibold text-maroon">{r.name}</figcaption>
+              </figure>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* FAQ */}
       <section id="faq" className="scroll-mt-20 mx-auto max-w-3xl px-4 py-20">
         <div className="text-center">
@@ -333,7 +357,7 @@ export default function Home() {
           </div>
         </div>
       </section>
-      <ChatBot />
+      <ChatBot packages={packages} />
     </>
   );
 }
