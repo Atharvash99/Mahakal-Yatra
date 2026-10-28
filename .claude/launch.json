@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web",
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\npm.cmd",
+      "runtimeArgs": ["--prefix", "web", "run", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "api",
+      "runtimeExecutable": "C:\\Users\\krris\\Desktop\\MahakalYatra\\api\\.venv\\Scripts\\python.exe",
+      "runtimeArgs": ["api/manage.py", "runserver", "8000", "--noreload"],
+      "port": 8000
+    }
+  ]
+}
