@@ -32,7 +32,7 @@ Run the backend tests with `python manage.py test` inside `api/`.
 | Packages, add-ons, coupons, festival dates | `catalog` | `/`, `/packages/[slug]` |
 | Booking, payments, refunds | `bookings` | `/book/[slug]`, `/my-bookings` |
 | Enquiries | `customers` | `/enquiry` |
-| Drivers, vehicles, assignments | `operations` | driver card on `/my-bookings` |
+| Drivers, vehicles, assignments | `operations` | driver card on `/my-bookings`; staff dashboard: admin > Assignments > Operations dashboard |
 | Driver portal (PWA) | `driver` | `/driver` |
 | Reviews | `reviews` | `/review`, shown on pages |
 | Payables and margin report | `finance` | admin: Finance > Payables > Finance report |

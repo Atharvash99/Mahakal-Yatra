@@ -3,7 +3,9 @@ import secrets
 
 from django.contrib.auth.hashers import check_password, make_password
 
-from .models import Assignment, Driver
+from bookings import services as booking_services
+
+from .models import Assignment, Driver, Vehicle
 
 
 def driver_card(booking_ref: str) -> dict | None:
@@ -36,3 +38,28 @@ def authenticate_driver(phone: str, pin: str) -> Driver | None:
     if driver and driver.pin_hash and check_password(pin or '', driver.pin_hash):
         return driver
     return None
+
+
+def assignments_by_ref(refs) -> dict:
+    """Latest assignment per booking ref."""
+    out = {}
+    for a in Assignment.objects.filter(booking_ref__in=list(refs)).select_related('driver', 'vehicle').order_by('id'):
+        out[a.booking_ref] = a
+    return out
+
+
+def assign(booking_ref: str, driver: Driver, vehicle: Vehicle, pickup_time=None) -> Assignment:
+    """One-click assignment: creates the Assignment and moves the booking to assigned."""
+    booking = booking_services.get_by_ref(booking_ref)
+    if not booking:
+        raise booking_services.BookingError('Unknown booking.')
+    if booking.status != 'confirmed':
+        raise booking_services.BookingError(f'{booking_ref} is {booking.status}; only confirmed bookings can be assigned.')
+    if not driver.active or not vehicle.active:
+        raise booking_services.BookingError('Driver and vehicle must be active.')
+    if vehicle.capacity < booking.num_travellers:
+        raise booking_services.BookingError(
+            f'{vehicle} seats {vehicle.capacity}, booking has {booking.num_travellers} travellers.')
+    a = Assignment.objects.create(booking_ref=booking_ref, driver=driver, vehicle=vehicle, pickup_time=pickup_time)
+    booking_services.mark_assigned(booking)
+    return a

@@ -157,3 +157,19 @@ def mark_assigned(booking: Booking) -> None:
 
 def mark_completed(booking: Booking) -> None:
     _set_status(booking, Booking.Status.COMPLETED)
+
+
+def staff_overview(today) -> dict:
+    """What the ops team needs each morning: today's trips, bookings still needing a driver, refunds to pay."""
+    live = (Booking.Status.CONFIRMED, Booking.Status.ASSIGNED)
+    return {
+        'trips_today': list(Booking.objects.filter(travel_date=today, status__in=live).order_by('created_at')),
+        'unassigned': list(Booking.objects.filter(
+            status=Booking.Status.CONFIRMED, travel_date__gte=today).order_by('travel_date', 'created_at')),
+        'pending_refunds': list(Refund.objects.filter(status=Refund.Status.PENDING)
+                                .select_related('booking').order_by('created_at')),
+    }
+
+
+def get_by_ref(ref: str) -> Booking | None:
+    return Booking.objects.filter(ref=ref).first()

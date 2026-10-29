@@ -17,11 +17,11 @@ The user is a developer who owns the technical build; focus on development and u
 - Git identity: `Atharvash99 <s.atharva30901@gmail.com>`. Never use the Claude account email.
 
 ## State (as of last session)
-Done: landing site, package pages, inclusion/exclusion bot (rule-based, reads package data), enquiry form, booking flow with live quote, add-ons and coupons, my-bookings with driver card, festival calendar, reviews, driver PWA, finance report, SEO guides + sitemap + JSON-LD, env-driven settings, Render blueprint. 16 backend tests (`python manage.py test` in `api/`).
+Done: landing site, package pages, inclusion/exclusion bot (rule-based, reads package data), enquiry form, booking flow with live quote, add-ons and coupons, my-bookings with driver card, festival calendar, reviews, driver PWA, finance report, staff operations dashboard (admin > Assignments > Operations dashboard: today's trips, unassigned bookings with one-click assign, pending refunds), SEO guides + sitemap + JSON-LD, env-driven settings, Render blueprint. 21 backend tests (`python manage.py test` in `api/`).
 
 Placeholders: package prices and costs, add-on prices, coupon `YATRA5`, 5% GST, WhatsApp number (`NEXT_PUBLIC_WHATSAPP_NUMBER`), no photos (SVG art only).
 
 Not connected or not tested: Razorpay live path (mock gateway is default), WhatsApp/SMS/email delivery (`notifications/services._deliver` only logs), no deployment yet.
 
 ## Next candidates
-Staff dashboard (today's trips, unassigned bookings, pending refunds, one-click assignment); vendor portal; referrals; blog CMS; analytics (GA4/Meta Pixel/PostHog); real photos; corporate/bulk enquiry flow; Hindi language toggle.
+Vendor portal; referrals; blog CMS; analytics (GA4/Meta Pixel/PostHog); real photos; corporate/bulk enquiry flow; Hindi language toggle.

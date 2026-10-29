@@ -1,0 +1,46 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h2>Today's trips ({{ today|date:"j M Y" }})</h2>
+<table>
+  <thead><tr><th>Ref</th><th>Customer</th><th>Package</th><th>Pax</th><th>Pickup</th><th>Driver / vehicle</th><th>Balance</th></tr></thead>
+  {% for b, a in trips %}
+  <tr>
+    <td>{{ b.ref }}</td><td>{{ b.customer_name }} ({{ b.phone }})</td><td>{{ b.package_name }}</td>
+    <td>{{ b.num_travellers }}</td><td>{{ b.pickup_point|default:"-" }}{% if a.pickup_time %} at {{ a.pickup_time|time:"h:i A" }}{% endif %}</td>
+    <td>{% if a %}{{ a.driver.name }} / {{ a.vehicle.number }}{% else %}<b>Not assigned</b>{% endif %}</td>
+    <td>Rs {{ b.balance_due }}</td>
+  </tr>
+  {% empty %}<tr><td colspan="7">No trips today.</td></tr>{% endfor %}
+</table>
+
+<h2 style="margin-top:1.5rem">Needs a driver ({{ o.unassigned|length }})</h2>
+<table>
+  <thead><tr><th>Ref</th><th>Date</th><th>Customer</th><th>Package</th><th>Pax</th>{% if can_assign %}<th>Assign</th>{% endif %}</tr></thead>
+  {% for b in o.unassigned %}
+  <tr>
+    <td>{{ b.ref }}</td><td>{{ b.travel_date|date:"j M" }}</td><td>{{ b.customer_name }}</td>
+    <td>{{ b.package_name }}</td><td>{{ b.num_travellers }}</td>
+    {% if can_assign %}
+    <td>
+      <form method="post">{% csrf_token %}
+        <input type="hidden" name="ref" value="{{ b.ref }}">
+        <select name="driver" required><option value="">Driver</option>{% for d in drivers %}<option value="{{ d.pk }}">{{ d.name }}</option>{% endfor %}</select>
+        <select name="vehicle" required><option value="">Vehicle</option>{% for v in vehicles %}<option value="{{ v.pk }}">{{ v.kind }} {{ v.number }} ({{ v.capacity }})</option>{% endfor %}</select>
+        <input type="time" name="pickup_time">
+        <button type="submit">Assign</button>
+      </form>
+    </td>
+    {% endif %}
+  </tr>
+  {% empty %}<tr><td colspan="6">Every confirmed booking has a driver.</td></tr>{% endfor %}
+</table>
+
+<h2 style="margin-top:1.5rem">Pending refunds ({{ o.pending_refunds|length }})</h2>
+<table>
+  <thead><tr><th>Booking</th><th>Amount</th><th>Percent</th><th>Created</th></tr></thead>
+  {% for r in o.pending_refunds %}
+  <tr><td>{{ r.booking.ref }} ({{ r.booking.customer_name }})</td><td>Rs {{ r.amount }}</td><td>{{ r.refund_percent }}%</td><td>{{ r.created_at|date:"j M" }}</td></tr>
+  {% empty %}<tr><td colspan="4">None.</td></tr>{% endfor %}
+</table>
+<p><a href="{{ refund_url }}">Process refunds</a></p>
+{% endblock %}
