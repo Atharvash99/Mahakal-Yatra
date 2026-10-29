@@ -24,4 +24,5 @@ urlpatterns = [
     path('api/', include('bookings.urls')),
     path('api/', include('reviews.urls')),
     path('api/driver/', include('driver.urls')),
+    path('api/staff/', include('staff.urls')),
 ]

@@ -3,7 +3,10 @@ import secrets
 
 from django.contrib.auth.hashers import check_password, make_password
 
+from django.utils import timezone
+
 from bookings import services as booking_services
+from notifications import services as notify
 
 from .models import Assignment, Driver, Vehicle
 
@@ -63,3 +66,59 @@ def assign(booking_ref: str, driver: Driver, vehicle: Vehicle, pickup_time=None)
     a = Assignment.objects.create(booking_ref=booking_ref, driver=driver, vehicle=vehicle, pickup_time=pickup_time)
     booking_services.mark_assigned(booking)
     return a
+
+
+def get_driver(pk) -> Driver | None:
+    return Driver.objects.filter(pk=pk).first()
+
+
+def get_vehicle(pk) -> Vehicle | None:
+    return Vehicle.objects.filter(pk=pk).first()
+
+
+def fleet() -> dict:
+    return {'drivers': list(Driver.objects.order_by('-active', 'name')),
+            'vehicles': list(Vehicle.objects.order_by('-active', 'kind', 'number'))}
+
+
+def send_driver_card(booking) -> Assignment | None:
+    """Send the driver card to the customer; returns None when no driver is assigned yet."""
+    a = Assignment.objects.filter(booking_ref=booking.ref).select_related('driver', 'vehicle').last()
+    if not a:
+        return None
+    notify.driver_card(booking, a)
+    a.driver_card_sent_at = timezone.now()
+    a.save(update_fields=['driver_card_sent_at'])
+    return a
+
+
+class OperationsError(ValueError):
+    pass
+
+
+def create_driver(*, name: str, phone: str, years_experience: int = 1) -> Driver:
+    digits = re.sub(r'\D', '', phone or '')[-10:]
+    if not name.strip():
+        raise OperationsError('Driver name is required.')
+    if len(digits) != 10:
+        raise OperationsError('Phone must be a 10-digit number.')
+    if Driver.objects.filter(phone__endswith=digits).exists():
+        raise OperationsError('A driver with this phone number already exists.')
+    return Driver.objects.create(name=name.strip()[:100], phone=digits, years_experience=max(0, min(60, years_experience)))
+
+
+def create_vehicle(*, number: str, kind: str, capacity: int, operator_name: str = '') -> Vehicle:
+    number = re.sub(r'\s+', '', number or '').upper()
+    if not number or not kind.strip():
+        raise OperationsError('Vehicle number and type are required.')
+    if not 1 <= capacity <= 60:
+        raise OperationsError('Seats must be between 1 and 60.')
+    if Vehicle.objects.filter(number=number).exists():
+        raise OperationsError('A vehicle with this number already exists.')
+    return Vehicle.objects.create(number=number[:20], kind=kind.strip()[:50], capacity=capacity,
+                                  operator_name=operator_name.strip()[:100])
+
+
+def set_active(obj, active: bool) -> None:
+    obj.active = active
+    obj.save(update_fields=['active'])

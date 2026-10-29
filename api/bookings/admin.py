@@ -1,8 +1,7 @@
 from django.contrib import admin, messages
-from django.utils import timezone
 
 from core.admin import AuditedAdmin
-from notifications import services as notify
+from operations import services as operations
 from operations.models import Assignment
 
 from . import services
@@ -51,13 +50,8 @@ class BookingAdmin(AuditedAdmin):
     @admin.action(description='Send driver card on WhatsApp')
     def send_driver_card(self, request, queryset):
         for b in queryset:
-            a = Assignment.objects.filter(booking_ref=b.ref).select_related('driver', 'vehicle').last()
-            if not a:
+            if not operations.send_driver_card(b):
                 self.message_user(request, f'{b.ref}: no driver assigned yet.', messages.WARNING)
-                continue
-            notify.driver_card(b, a)
-            a.driver_card_sent_at = timezone.now()
-            a.save(update_fields=['driver_card_sent_at'])
         self.message_user(request, 'Driver cards queued (see Notifications).')
 
     @admin.action(description='Mark trip completed')

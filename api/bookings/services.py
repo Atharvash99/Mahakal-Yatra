@@ -173,3 +173,40 @@ def staff_overview(today) -> dict:
 
 def get_by_ref(ref: str) -> Booking | None:
     return Booking.objects.filter(ref=ref).first()
+
+
+def search(*, q: str = '', status: str = '', date_from=None, date_to=None, limit: int = 25, offset: int = 0):
+    """Staff booking list: free text on ref, name or phone, plus status and travel-date filters."""
+    from django.db.models import Q
+    qs = Booking.objects.all()
+    q = q.strip()
+    if q:
+        qs = qs.filter(Q(ref__icontains=q) | Q(customer_name__icontains=q) | Q(phone__icontains=q))
+    if status:
+        qs = qs.filter(status=status)
+    if date_from:
+        qs = qs.filter(travel_date__gte=date_from)
+    if date_to:
+        qs = qs.filter(travel_date__lte=date_to)
+    total = qs.count()
+    rows = list(qs.order_by('-travel_date', '-created_at')[offset:offset + limit].prefetch_related('payments'))
+    return rows, total
+
+
+def detail(ref: str) -> Booking | None:
+    return (Booking.objects.filter(ref=ref)
+            .prefetch_related('travellers', 'payments', 'refunds').first())
+
+
+def list_refunds(status: str = ''):
+    qs = Refund.objects.select_related('booking').order_by('status', '-created_at')
+    return list(qs.filter(status=status) if status else qs)
+
+
+def get_refund(pk) -> Refund | None:
+    return Refund.objects.select_related('booking').filter(pk=pk).first()
+
+
+def status_counts() -> dict:
+    from django.db.models import Count
+    return {r['status']: r['n'] for r in Booking.objects.values('status').annotate(n=Count('id'))}

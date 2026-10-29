@@ -38,8 +38,12 @@ Run the backend tests with `python manage.py test` inside `api/`.
 | Payables and margin report | `finance` | admin: Finance > Payables > Finance report |
 | WhatsApp/SMS/email log | `notifications` | none |
 | Staff roles and audit log | `core` | admin |
+| Staff portal API (login, bookings, assign, refunds, fleet, enquiries, finance) | `staff` | `/staff` |
 
 ## Operations notes
+
+- Staff portal: sign in at `/staff` with a Django staff user (Owner = superuser; run `setup_roles` for the other roles).
+  What each person sees follows their role's permissions. Package, add-on and coupon editing is still in the Django admin.
 
 - Set a driver's portal PIN: Admin > Drivers > action "Generate a new portal PIN".
 - Send tomorrow's driver cards nightly: `python manage.py send_driver_cards` (schedule at about 8 PM).
